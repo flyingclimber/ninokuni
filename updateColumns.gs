@@ -16,7 +16,6 @@ function searchFolders(folders) {
     }
 
     while (files.hasNext()) {
-      
       var sheet = SpreadsheetApp.open(files.next()).getSheets()[0];
       Logger.log(sheet.getParent().getName());
       var sheetRange = sheet.getRange('2:2');
