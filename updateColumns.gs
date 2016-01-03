@@ -1,11 +1,24 @@
 function updateAllFiles() {
   var folders = DriveApp.getFoldersByName('Overlays-test');
 
-  while (folders.hasNext()) {
-    var files = folders.next().getFiles();
+  searchFolders(folders);
+}
+
+function searchFolders(folders) {
+  while (folders.hasNext()) {      
+    var next = folders.next();
+
+    var files = next.getFiles();
+    var subFolders = next.getFolders();
+    
+    while(subFolders.hasNext()) {
+      searchFolders(subFolders);
+    }
 
     while (files.hasNext()) {
+      
       var sheet = SpreadsheetApp.open(files.next()).getSheets()[0];
+      Logger.log(sheet.getParent().getName());
       var sheetRange = sheet.getRange('2:2');
       
       updateText('Proofreader', 'Editor', sheetRange); // (3) Change Proofreader to Editor
@@ -19,8 +32,8 @@ function updateAllFiles() {
       var sheetRange = sheet.getRange('2:2');
       updateText("", "Edited Text", sheetRange)
       updateText("", "Edited Notes", sheetRange)    
+      }
   }
- }
 }
 
 function findText(key, range) {
