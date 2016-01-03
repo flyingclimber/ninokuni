@@ -1,5 +1,7 @@
+var TOPLEVELDIR = 'Overlays-test'
+
 function updateAllFiles() {
-  var folders = DriveApp.getFoldersByName('Overlays-test');
+  var folders = DriveApp.getFoldersByName(TOPLEVELDIR);
 
   searchFolders(folders);
 }
