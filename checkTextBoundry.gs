@@ -11,7 +11,8 @@ function checkTextBoundry() {
     var sheetRange = sheet.getRange('2:2');
 
     translateColumn = getColumn('Translated Text', sheetRange);
-    var translateRange = sheet.getRange(translateColumn + '3:' + translateColumn);
+    editedTextColumn = getColumn('Edited Text', sheetRange);
+    var translateRange = sheet.getRange(translateColumn + '3:' + editedTextColumn);
     var values = translateRange.getValues();
     
     for(var i = 0; i<values.length; i++) {
@@ -23,8 +24,8 @@ function checkTextBoundry() {
 var PRE_TEXT = "";
 
 function checkLine(text) {
-  text = typeof text !== 'undefined' ? text[0] : PRE_TEXT;
-  tokens = text.split("\n");
+  text = typeof text !== 'undefined' ? text : PRE_TEXT;
+  tokens = text[0].split("\n");
   
   for(var a = 0; a<tokens.length; a++) {
     var computed_length = 0;
@@ -41,8 +42,7 @@ function checkLine(text) {
       }
         computed_length += val
       }  
-    
-    if(computed_length > MAX) {
+    if(computed_length > MAX && text[text.length - 1] == "" ) {
       out = tokens[a].slice(0,marker) + "<--|-->" + tokens[a].slice(marker);
 
       Logger.log("Length: " + computed_length);
@@ -54,7 +54,7 @@ function checkLine(text) {
 function getColumn(key, range) {
   var values = range.getValues();
   var index = values[0].indexOf(key);
-  var columns = ['A','B','C','D','E','F','G','H'];
+  var columns = ['A','B','C','D','E','F','G','H','I','J','K'];
 
   return columns[index];
 }
