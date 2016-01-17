@@ -51,44 +51,47 @@ var PRE_TEXT = "";
 
 function checkLine(text) {
   text = typeof text !== 'undefined' ? text : PRE_TEXT;
-  tokens = text[0].split("\n");
   
-  for(var a = 0; a<tokens.length; a++) {
-    var computed_length = 0;
-    var marker = false
-    var inside_markup = false
+  if(typeof text[0] == 'string') {
+    var tokens = text[0].split("\n");
+  
+    for(var a = 0; a<tokens.length; a++) {
+      var computed_length = 0;
+      var marker = false
+      var inside_markup = false
     
-    for(var c = 0; c<tokens[a].length; c++) {
-      var char = tokens[a][c];
+      for(var c = 0; c<tokens[a].length; c++) {
+        var char = tokens[a][c];
       
-      if(computed_length >= MAX && ! marker) {
+        if(computed_length >= MAX && ! marker) {
           marker = c     
-      }
+        }
       
-      if (char == '{') {
-        inside_markup = true;
-        continue;
-      } else if(char == '}') {
-        inside_markup = false;
-        continue;
-      } else if (inside_markup == true) {
-        continue;
-      } else if(char == " " ) {
-        val = 5
-      } else {
-        val = FONT_DELIM[char];
-      }
+        if (char == '{') {
+          inside_markup = true;
+          continue;
+        } else if(char == '}') {
+          inside_markup = false;
+          continue;
+        } else if (inside_markup == true) {
+          continue;
+        } else if(char == " " ) {
+          val = 5
+        } else {
+          val = FONT_DELIM[char];
+        }
+        
+        computed_length += val
+      }  
+      if(marker && text[text.length - 1] == "" ) {
+        note = tokens[a].slice(0,marker) + "<--|-->" + tokens[a].slice(marker);
       
-      computed_length += val
-    }  
-    if(marker && text[text.length - 1] == "" ) {
-      note = tokens[a].slice(0,marker) + "<--|-->" + tokens[a].slice(marker);
-
-      //res = "Length: " + computed_length + "\n"
-      res = note
-      return res;
+        //res = "Length: " + computed_length + "\n"
+        res = note
+        return res;
+      }
     }
-   }
+  }
 }
 
 function getColumn(key, range) {
