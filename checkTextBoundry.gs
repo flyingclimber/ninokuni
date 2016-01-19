@@ -1,16 +1,16 @@
 var TOPLEVELDIR = ''
 var FONT_DELIM_FILE_URL = 'http://flyingclimber.net/ninokunids/font12.json';
-var FONT_DELIM = loadDelimFile();
+var FONT_DELIM = loadDelimFile_();
 var MAX = 223;
 var MAXFIX = 20;
 
 function updateAllFiles() {
   var folders = DriveApp.getFoldersByName(TOPLEVELDIR);
 
-  checkTextBoundry(folders);
+  checkTextBoundry_(folders);
 }
 
-function checkTextBoundry(folders) {
+function checkTextBoundry_(folders) {
   while (folders.hasNext()) {
     var next = folders.next();
     var files = next.getFiles();
@@ -25,8 +25,8 @@ function checkTextBoundry(folders) {
       Logger.log(sheet.getParent().getName());
       var sheetRange = sheet.getRange('2:2');
 
-      translateColumn = getColumn('Translated Text', sheetRange);
-      editedTextColumn = getColumn('Edited Text', sheetRange);
+      translateColumn = getColumn_('Translated Text', sheetRange);
+      editedTextColumn = getColumn_('Edited Text', sheetRange);
       var translateRange = sheet.getRange(translateColumn + '3:' + editedTextColumn);
       var values = translateRange.getValues();
     
@@ -94,7 +94,7 @@ function checkLine(text) {
   }
 }
 
-function getColumn(key, range) {
+function getColumn_(key, range) {
   var values = range.getValues();
   var index = values[0].indexOf(key);
   var columns = ['A','B','C','D','E','F','G','H','I','J','K'];
@@ -102,7 +102,7 @@ function getColumn(key, range) {
   return columns[index];
 }
 
-function loadDelimFile() {
+function loadDelimFile_() {
   var response = UrlFetchApp.fetch(FONT_DELIM_FILE_URL);
   var json = response.getContentText();
   var data = JSON.parse(json);
