@@ -1,8 +1,11 @@
-var TOPLEVELDIR = ''
+var TOPLEVELDIR = '';
 var FONT_DELIM_FILE_URL = 'http://flyingclimber.net/ninokunids/font12.json';
 var FONT_DELIM = loadDelimFile_();
 var MAX = 223;
 var MAXFIX = 20;
+var longStrings = [];
+var EMAIL = '';
+var SUBJECT = "NiNoKuniDS String Length";
 
 function updateAllFiles() {
   var folders = DriveApp.getFoldersByName(TOPLEVELDIR);
@@ -15,22 +18,27 @@ function checkTextBoundry_(folders) {
     var next = folders.next();
     var files = next.getFiles();
     var subFolders = next.getFolders();
+
+    Logger.log(next.getName());
     
     while(subFolders.hasNext()) {
-      checkTextBoundry(subFolders);
+      checkTextBoundry_(subFolders);
     }
     
     while (files.hasNext()) {
       var sheet = SpreadsheetApp.open(files.next()).getSheets()[0];
-      Logger.log(sheet.getParent().getName());
+      var fileName = sheet.getParent().getName();
       var sheetRange = sheet.getRange('2:2');
+      
+      Logger.log(fileName);
+      longStrings[fileName] = 0;
 
-      translateColumn = getColumn_('Translated Text', sheetRange);
-      editedTextColumn = getColumn_('Edited Text', sheetRange);
+      var translateColumn = getColumn_('Translated Text', sheetRange);
+      var editedTextColumn = getColumn_('Edited Text', sheetRange);
       var translateRange = sheet.getRange(translateColumn + '3:' + editedTextColumn);
       var values = translateRange.getValues();
     
-      //translateRange.clearNote();
+      translateRange.clearNote();
       var fixed = 0;
     
       for(var i = 0; i<values.length; i++) {
@@ -38,13 +46,30 @@ function checkTextBoundry_(folders) {
         if(note && fixed <= MAXFIX) {
           cellLoc = parseInt(i) + 3;
           var cell = sheet.getRange(translateColumn + cellLoc);
-          //cell.setNote(note);
+          cell.setNote(note);
           Logger.log(note);
           fixed += 1;
+          longStrings[fileName] += 1;
         }
       }
     }     
   }
+  sendResults(longStrings);
+}
+
+function sendResults(data) {
+  var body = '';
+  var totalCount = 0;
+  Object.keys(data)
+  .sort()
+  .forEach(function(v, i) {
+    var count = data[v];
+    if(count) {
+      body += v + ":" + count + "\n";
+      totalCount += count;
+    }
+  });
+  MailApp.sendEmail(EMAIL, SUBJECT + ": " + totalCount, body);
 }
 
 var PRE_TEXT = "";
