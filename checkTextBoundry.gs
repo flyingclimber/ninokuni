@@ -10,6 +10,7 @@ function updateAllFiles() {
   var folders = DriveApp.getFoldersByName(TOPLEVELDIR);
 
   checkTextBoundry_(folders);
+  sendResults(longStrings);
 }
 
 function checkTextBoundry_(folders) {
@@ -17,8 +18,6 @@ function checkTextBoundry_(folders) {
     var next = folders.next();
     var files = next.getFiles();
     var subFolders = next.getFolders();
-
-    Logger.log(next.getName());
     
     while(subFolders.hasNext()) {
       checkTextBoundry_(subFolders);
@@ -29,7 +28,6 @@ function checkTextBoundry_(folders) {
       var fileName = sheet.getParent().getName();
       var sheetRange = sheet.getRange('2:2');
       
-      Logger.log(fileName);
       longStrings[fileName] = 0;
 
       var translateColumn = getColumn_('Translated Text', sheetRange);
@@ -51,22 +49,23 @@ function checkTextBoundry_(folders) {
       }
     }     
   }
-  sendResults(longStrings);
 }
 
 function sendResults(data) {
   var body = '';
   var totalCount = 0;
+  
   Object.keys(data)
   .sort()
   .forEach(function(v, i) {
     var count = data[v];
     if(count) {
-      body += v + ":" + count + "\n";
+      body += v + ":" + count + ", ";
       totalCount += count;
     }
   });
   MailApp.sendEmail(EMAIL, SUBJECT + ": " + totalCount, body);
+  updateSlackTopic(body);
 }
 
 var PRE_TEXT = "";
@@ -108,9 +107,7 @@ function checkLine(text) {
       if(marker && text[text.length - 1] == "" ) {
         note = tokens[a].slice(0,marker) + "<--|-->" + tokens[a].slice(marker);
       
-        //res = "Length: " + computed_length + "\n"
-        res = note
-        return res;
+        return note;
       }
     }
   }
@@ -130,4 +127,24 @@ function loadDelimFile_() {
   var data = JSON.parse(json);
 
   return data.characters;
+}
+
+function updateSlackTopic(message) {
+  var URL = "https://slack.com/";
+  var PATH = "api/channels.setTopic";
+  var token = "";
+  var channel = "";
+  
+  var payload = {
+    "token" : token,
+    "channel" : channel,
+    "topic" : "Next files needing string length editing: " + message
+  };
+  
+  var options = {
+    "method" : "post",
+    "payload" : payload
+  };
+  
+  UrlFetchApp.fetch(URL + PATH, options);
 }
