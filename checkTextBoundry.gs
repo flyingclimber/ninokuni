@@ -6,6 +6,10 @@ var longStrings = [];
 var EMAIL = '';
 var SUBJECT = "NiNoKuniDS String Length";
 
+var SLACK_URL = '';
+var SLACK_token = '';
+var SLACK_channel = '';
+
 function updateAllFiles() {
   var folders = DriveApp.getFoldersByName(TOPLEVELDIR);
 
@@ -52,7 +56,7 @@ function checkTextBoundry_(folders) {
 }
 
 function sendResults(data) {
-  var body = '';
+  var fileCount = '';
   var totalCount = 0;
   
   Object.keys(data)
@@ -64,8 +68,18 @@ function sendResults(data) {
       totalCount += count;
     }
   });
+  
+  if(fileCount == '') {
+    body = "Next files needing string length editing: none!"
+  } else {
+    body = "Next files needing string length editing: " + fileCount;
+  }
+  
+  if(body != getSlackTopic()) {
+    updateSlackTopic(body);  
+  }
+  
   MailApp.sendEmail(EMAIL, SUBJECT + ": " + totalCount, body);
-  updateSlackTopic(body);
 }
 
 var PRE_TEXT = "";
@@ -130,15 +144,12 @@ function loadDelimFile_() {
 }
 
 function updateSlackTopic(message) {
-  var URL = "https://slack.com/";
-  var PATH = "api/channels.setTopic";
-  var token = "";
-  var channel = "";
-  
+  var SLACK_PATH = "api/channels.setTopic";
+
   var payload = {
-    "token" : token,
-    "channel" : channel,
-    "topic" : "Next files needing string length editing: " + message
+    "token" : SLACK_token,
+    "channel" : SLACK_channel,
+    "topic" : message
   };
   
   var options = {
@@ -146,5 +157,25 @@ function updateSlackTopic(message) {
     "payload" : payload
   };
   
-  UrlFetchApp.fetch(URL + PATH, options);
+  UrlFetchApp.fetch(SLACK_URL + SLACK_PATH, options);
+}
+
+
+function getSlackTopic() {
+  var SLACK_PATH = "api/channels.info";
+
+  var payload = {
+    "token" : SLACK_token,
+    "channel" : SLACK_channel,
+  };
+  
+  var options = {
+    "method" : "post",
+    "payload" : payload
+  };
+  
+  var resp = UrlFetchApp.fetch(SLACK_URL + SLACK_PATH, options);
+  var data = JSON.parse(resp);
+ 
+  return data.channel.latest.topic;
 }
