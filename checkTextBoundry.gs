@@ -6,12 +6,12 @@ var longStrings = [];
 var EMAIL = '';
 var SUBJECT = "NiNoKuniDS String Length";
 
-var SLACK_URL = '';
-var SLACK_token = '';
-var SLACK_channel = '';
+var SLACK_WEBHOOK = '';
+var SLACK_CHANNEL = '';
+var SLACK_BOTNAME = '';
+var SLACK_BOTEMOJI = '';
 
 var scriptProperties = PropertiesService.getScriptProperties();
-//scriptProperties.deleteAllProperties();
 var lastUpdatedDate = scriptProperties.getProperty('lastRunDate');
 
 function updateAllFiles() {
@@ -194,52 +194,26 @@ function sendResults(data) {
   } else {
     body = "Needs string length editing: " + fileCount;
   }
-  
-  slack_body = body
-  
-  if(slack_body.length > 100) {
-      slack_body = slack_body.substring(0,97) + "...";
-  }
-  
-  if(slack_body != getSlackTopic()) {
-    //updateSlackTopic(slack_body);  
-  }
-  
+    
+  sendSlackMessage(body);    
   MailApp.sendEmail(EMAIL, SUBJECT + ": " + totalCount, body);
 }
 
-function updateSlackTopic(message) {
-  var SLACK_PATH = "api/channels.setTopic";
-
-  var payload = {
-    "token" : SLACK_token,
-    "channel" : SLACK_channel,
-    "topic" : message
-  };
+function sendSlackMessage(message) {
+  var payload = JSON.stringify(
+    {
+      'channel': SLACK_CHANNEL,
+      'username': SLACK_BOTNAME,
+      'text' : message,
+      'icon_emoji': SLACK_BOTEMOJI 
+    }
+  );
   
   var options = {
     "method" : "post",
     "payload" : payload
   };
   
-  UrlFetchApp.fetch(SLACK_URL + SLACK_PATH, options);
-}
-
-function getSlackTopic() {
-  var SLACK_PATH = "api/channels.info";
-
-  var payload = {
-    "token" : SLACK_token,
-    "channel" : SLACK_channel,
-  };
   
-  var options = {
-    "method" : "post",
-    "payload" : payload
-  };
-  
-  var resp = UrlFetchApp.fetch(SLACK_URL + SLACK_PATH, options);
-  var data = JSON.parse(resp);
- 
-  return data.channel.latest.topic;
+  UrlFetchApp.fetch(SLACK_WEBHOOK, options);
 }
