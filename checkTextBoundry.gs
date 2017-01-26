@@ -194,9 +194,12 @@ function sendResults(data) {
   } else {
     body = "Needs string length editing: " + fileCount;
   }
-    
-  sendSlackMessage(body);    
-  MailApp.sendEmail(EMAIL, SUBJECT + ": " + totalCount, body);
+
+  if(scriptProperties.getProperty('lastMessage') != body) {
+    sendSlackMessage(body);    
+    MailApp.sendEmail(EMAIL, SUBJECT + ": " + totalCount, body);
+    scriptProperties.setProperty('lastMessage', body);
+  }
 }
 
 function sendSlackMessage(message) {
@@ -204,8 +207,8 @@ function sendSlackMessage(message) {
     {
       'channel': SLACK_CHANNEL,
       'username': SLACK_BOTNAME,
+      'icon_emoji': SLACK_BOTEMOJI, 
       'text' : message,
-      'icon_emoji': SLACK_BOTEMOJI 
     }
   );
   
@@ -213,7 +216,6 @@ function sendSlackMessage(message) {
     "method" : "post",
     "payload" : payload
   };
-  
-  
+    
   UrlFetchApp.fetch(SLACK_WEBHOOK, options);
 }
