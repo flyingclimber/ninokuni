@@ -11,7 +11,8 @@ var SLACK_token = '';
 var SLACK_channel = '';
 
 var scriptProperties = PropertiesService.getScriptProperties();
-var lastUpdatedDate = scriptProperties.getProperty('lastUpdatedDate');
+//scriptProperties.deleteAllProperties();
+var lastUpdatedDate = scriptProperties.getProperty('lastRunDate');
 
 function updateAllFiles() {
   Logger.log("Update Threshold: " + lastUpdatedDate);
@@ -19,7 +20,7 @@ function updateAllFiles() {
 
   checkTextBoundry_(folders);
   sendResults(longStrings);
-  scriptProperties.setProperty('lastUpdatedDate', Date());
+  scriptProperties.setProperty('lastRunDate', Date());
 }
 
 function checkTextBoundry_(folders) {
@@ -34,11 +35,22 @@ function checkTextBoundry_(folders) {
     
     while (files.hasNext()) {
       var file = files.next();
+      var fileName = file.getName();
+      Logger.log("Reviewing .. " + fileName);
+
       var fileLastUpdatedDate = file.getLastUpdated();
+      var lastUpdatedDate = scriptProperties.getProperty('lastRunDate');
+      var fileProperty = scriptProperties.getProperty(fileName);
       
-      if(Date.parse(fileLastUpdatedDate) > Date.parse(lastUpdatedDate)) {
+      if(!fileProperty) {
+         scriptProperties.setProperty(fileName, fileLastUpdatedDate + ",unknown,0")
+         fileProperty = scriptProperties.getProperty(fileName) 
+      }
+      
+      fileProperty = fileProperty.split(",");
+      
+      if(fileProperty[1] == 'true' || fileProperty[1] == 'unknown' || Date.parse(fileLastUpdatedDate) > Date.parse(lastUpdatedDate)) {
         var ss = SpreadsheetApp.open(file).getSheets()[0];
-        var fileName = ss.getParent().getName();
         var sheetRange = ss.getRange('2:2');
         
         longStrings[fileName] = 0;
@@ -46,25 +58,13 @@ function checkTextBoundry_(folders) {
         var translateColumn = getColumn_('Translated Text', sheetRange);
         var editedTextColumn = getColumn_('Edited Text', sheetRange);
         var translateRange = ss.getRange(translateColumn + '3:' + editedTextColumn);
+
+        clearTranslateRange(translateRange);
+        
+        Logger.log("Checking " + fileName + ":" + fileLastUpdatedDate);
+        
         var values = translateRange.getValues();        
-        var notes = translateRange.getNotes();
-        
-        //Logger.log("Checking " + fileName + ":" + file.getLastUpdated());
-        
-        found = false;
-        
-        for (var i in notes) { 
-          for (var j in notes[i]) {
-            if(notes[i][j]) {
-              found = true;
-              translateRange.clearNote()
-              break;
-            }
-          }
-          if(found) {
-            break;
-          }
-        }
+        var dirty = false;
         
         for(var i=0; i<values.length; i++) {
           if(typeof values[i][3] == 'string' & values[i][3] !== '') {
@@ -77,6 +77,7 @@ function checkTextBoundry_(folders) {
               cell.setNote(note);
               Logger.log(note);
               longStrings[fileName] += 1;
+              dirty = true
             }
           } else if(typeof values[i][0] == 'string') {
             var lines = values[i][0].split("\n");
@@ -88,12 +89,34 @@ function checkTextBoundry_(folders) {
               cell.setNote(note);
               Logger.log(note);
               longStrings[fileName] += 1;
+              dirty = true
             }
           }
-        }     
+        }
+        
+        scriptProperties.setProperty(fileName, fileLastUpdatedDate + "," + dirty + "," + longStrings[fileName]);
+        
       } else {
-        //Logger.log("Skipping " + file.getName() + ":" + file.getLastUpdated());
+        Logger.log("Skipping " + fileName + ":" + fileLastUpdatedDate);
       }
+    }
+  }
+}
+
+function clearTranslateRange(translateRange) {
+  var notes = translateRange.getNotes();
+  var found = false;
+        
+  for (var i in notes) { 
+    for (var j in notes[i]) {
+      if(notes[i][j]) {
+        found = true;
+        translateRange.clearNote()
+        break;
+      }
+    }
+    if(found) {
+      break;
     }
   }
 }
@@ -167,13 +190,19 @@ function sendResults(data) {
   });
   
   if(fileCount == '') {
-    body = "Next files needing string length editing: none!"
+    body = "Needs string length editing: none!"
   } else {
-    body = "Next files needing string length editing: " + fileCount;
+    body = "Needs string length editing: " + fileCount;
   }
   
-  if(body != getSlackTopic()) {
-    updateSlackTopic(body);  
+  slack_body = body
+  
+  if(slack_body.length > 100) {
+      slack_body = slack_body.substring(0,97) + "...";
+  }
+  
+  if(slack_body != getSlackTopic()) {
+    //updateSlackTopic(slack_body);  
   }
   
   MailApp.sendEmail(EMAIL, SUBJECT + ": " + totalCount, body);
