@@ -1,10 +1,26 @@
-var TOPLEVELDIR = '';
+// stringLength.gs: This is used to email/slack message if strings contained within our various text files will fit on screen
+//
+// We use the scriptProperties() service to set/check the last updated time, file state, number of errors.
+//
+// ex. property:stone93 value:"Thu Jan 26 2017 14:02:21 GMT-0600 (CST),true,7"
+// 
+// where value is a triplet of last file update, dirty state, and amount of errors
+//
+// dirty state could be:
+// 'unknown' - We've never processed this file
+// 'false' - File was processed previously and was clean
+// 'true' - File was processsed previously and was dirty
+//
+// All files are checked if they've been updated since the script last ran and their states are correspondingly updated
+
+var DIRS = [];
 var FONT_DELIM_FILE_URL = 'http://flyingclimber.net/ninokunids/font12.json';
 var FONT_DELIM = loadDelimFile_();
 var MAX = 223;
 var longStrings = [];
 var EMAIL = '';
 var SUBJECT = "NiNoKuniDS String Length";
+var filesChecked = 0;
 
 var SLACK_WEBHOOK = '';
 var SLACK_CHANNEL = '';
@@ -14,13 +30,26 @@ var SLACK_BOTEMOJI = '';
 var scriptProperties = PropertiesService.getScriptProperties();
 var lastUpdatedDate = scriptProperties.getProperty('lastRunDate');
 
+
+// Spreadsheet Logic //
 function updateAllFiles() {
   Logger.log("Update Threshold: " + lastUpdatedDate);
-  var folders = DriveApp.getFoldersByName(TOPLEVELDIR);
-
-  checkTextBoundry_(folders);
+  var folders = [];
+  
+  DIRS.forEach(function(e) {
+    folders.push(DriveApp.getFoldersByName(e));
+  });
+      
+  folders.forEach(function(e) {
+    checkTextBoundry_(e);
+  });
+  
   sendResults(longStrings);
   scriptProperties.setProperty('lastRunDate', Date());
+}
+
+function deleteAllProperties() {
+  scriptProperties.deleteAllProperties();
 }
 
 function checkTextBoundry_(folders) {
@@ -37,7 +66,9 @@ function checkTextBoundry_(folders) {
       var file = files.next();
       var fileName = file.getName();
       Logger.log("Reviewing .. " + fileName);
-
+      filesChecked++;
+      Logger.log(filesChecked);
+      
       var fileLastUpdatedDate = file.getLastUpdated();
       var lastUpdatedDate = scriptProperties.getProperty('lastRunDate');
       var fileProperty = scriptProperties.getProperty(fileName);
@@ -167,6 +198,9 @@ function getColumn_(key, range) {
   return columns[index];
 }
 
+// End of Spreadsheet Logic //
+
+// Remote calls //
 function loadDelimFile_() {
   var response = UrlFetchApp.fetch(FONT_DELIM_FILE_URL);
   var json = response.getContentText();
@@ -219,3 +253,5 @@ function sendSlackMessage(message) {
     
   UrlFetchApp.fetch(SLACK_WEBHOOK, options);
 }
+
+// End of remote calls //
